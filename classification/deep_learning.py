@@ -1,13 +1,15 @@
 import argparse
 import copy
 import warnings
+import torch
+import numpy as np
 from torch import nn
 from torch.utils.data import DataLoader
 import time
 from dataloader.dataset_factory import get_data, DataObject
-from dataloader.valid_dataset_configs import *
+from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG
 from evaluation.api import report_model_performance, init_evaluation_database, evaluate_predictions_on_test_set
-from sample_transforms.augment import *
+from sample_transforms.augment import RandomFlip, RandomRotate, RandomCut, RandomCrop
 from classification.model_factory import get_model, VALID_MODELS, get_default_model_hparams, save_model, get_pretrained_model, VALID_MODELS_PRETRAINING
 from sample_transforms.pca import PCA
 import os
@@ -218,7 +220,6 @@ if __name__ == '__main__':
             continue
 
         train_loader, val_loader, test_loader = get_data_loaders(data, hparams)
-
         # PCA
         # pca = PCA(data_raw, n_components=hparams['components']) if hparams['pca'] else None
         # num_channels = hparams['components'] if hparams['pca'] else len(data.info.channels)
