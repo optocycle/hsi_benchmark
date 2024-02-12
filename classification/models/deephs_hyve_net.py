@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from typing import Optional, Tuple
+from typing import Tuple
 
 from classification.models.utils.hyve_conv.hyve_convolution import HyVEConv
 from dataloader.basic_dataloader import get_channel_wavelengths

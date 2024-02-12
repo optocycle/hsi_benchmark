@@ -1,6 +1,5 @@
-import os
 from typing import List
-
+import os
 import torchvision.transforms
 from collections import namedtuple
 
@@ -8,15 +7,16 @@ from torchvision.transforms import Compose
 
 from camera_definitions import str2camera_type, get_wavelengths_for, CameraType
 from dataloader.basic_dataloader import HSDataset
-from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG, VALID_FRUIT_DATASET_CONFIG, VALID_HRSS_DATASET_CONFIG, VALID_DEBRIS_DATASET_CONFIG
+from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG
 
 from dataloader.fruit_dataloader import FruitDataset
 from dataloader.fruit.fruit_definitions import str2classification_type, str2fruit
 
 from dataloader.debris_dataloader import DebrisDataset
 
-from dataloader.hrss_dataloader import RemoteSensingDataset, SCENE_2_CAMERA_MAPPING, str2scene, Scene
-from sample_transforms import Normalize, RemoveLabel
+from dataloader.hrss_dataloader import RemoteSensingDataset, SCENE_2_CAMERA_MAPPING, str2scene
+from sample_transforms.normalize import Normalize
+from sample_transforms.remove_label import RemoveLabel
 
 VALID_DATASETS = ['debris', 'fruit', 'remote_sensing', 'waste']
 
@@ -51,16 +51,14 @@ def get_data(dataset_config, data_set_root, augmentations: List = []):
 
 def _get_data(dataset_config, data_set_root, without_test_labels=True, augmentations: List = []):
     DATASET_2_DIRECTORY_MAPPING = {
-        'debris': os.path.join(data_set_root, 'deephs_debris_resized/'),  # TODO: set paths?!
-        'waste': os.path.join(data_set_root, 'iosb_waste/'),  # TODO: set paths?!
-        'fruit': os.path.join(data_set_root, 'deephs_fruit_v4/'),
-        'remote_sensing': os.path.join(data_set_root, 'hrss_dataset')
+     #   'debris': os.path.join(data_set_root, 'Debris/'),  # TODO: set paths?!
+     #   'fruit': os.path.join(data_set_root, 'Fruits/'),
+        'remote_sensing': os.path.join(data_set_root, 'hrss_dataset'),#"j.cicvaric@optocycle.com/hrss_dataset"
         }
     assert dataset_config in VALID_DATASET_CONFIG
 
     dataset = dataset_config.split('/')[0]
     dataset_path = DATASET_2_DIRECTORY_MAPPING[dataset]
-    assert os.path.exists(dataset_path)
 
     test_data_transforms = torchvision.transforms.Compose(
         [Normalize(dataset), RemoveLabel()]) if without_test_labels else Normalize(dataset)

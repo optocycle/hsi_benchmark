@@ -5,7 +5,7 @@ from classification.models.resnet import ResNet, BasicBlock, Bottleneck, model_u
 from dataloader.basic_dataloader import get_channel_wavelengths
 import torch
 import torch.nn as nn
-from typing import Tuple, Optional
+from typing import Tuple
 
 
 class ResnetHyve(ResNet):

@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torchvision.transforms as T
 
 class HybridSN(nn.Module):
     def __init__(self, num_channels: int, num_classes: int, image_size: int = 63):

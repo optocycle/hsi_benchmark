@@ -86,7 +86,7 @@ def bands_as_first_dimension_rev(_obj):
     else:
         return _obj.transpose((1, 2, 0))
 
-
+# TODO rewrite 
 def find_hdr_files_in_path(data_path: str):
     list_of_files = glob.glob(os.path.join(data_path, "*.hdr"))
     if len(list_of_files) == 0:
@@ -103,7 +103,7 @@ def find_hdr_files_in_path(data_path: str):
     main_files = list(map(lambda x: x.replace(".hdr", ""), main_files))
     return main_files
 
-
+# TODO rewrite 
 def load_recording(path: str, spatial_size: Tuple):
     _header, _data = envi.load_envi(path)
     if spatial_size is not None:

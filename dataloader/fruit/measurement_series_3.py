@@ -1,4 +1,3 @@
-import numpy as np
 from camera_definitions import CameraType
 from .fruit_definitions import *
 

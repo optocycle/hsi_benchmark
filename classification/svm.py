@@ -4,8 +4,7 @@ from sklearn.svm import SVC
 from sklearn.decomposition import PCA
 
 from dataloader.dataset_factory import get_data
-from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG, \
-    VALID_HRSS_DATASET_CONFIG, VALID_FRUIT_DATASET_CONFIG, VALID_DEBRIS_DATASET_CONFIG
+from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG
 
 from evaluation.api import evaluate_predictions_on_test_set, report_model_performance
 

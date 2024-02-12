@@ -1,5 +1,3 @@
-from scipy import io
-import os
 import time
 
 import numpy as np
@@ -7,10 +5,7 @@ import torch
 import sklearn.decomposition
 import matplotlib.pyplot as plt
 
-from dataloader.basic_dataloader import bands_as_first_dimension
 from dataloader.dataset_factory import DataObject, get_data
-from dataloader.hrss_dataloader import Scene
-from sample_transforms import RandomFlip, RandomRotate, RandomNoise, RandomCut, RandomCrop
 
 
 class PCA(object):

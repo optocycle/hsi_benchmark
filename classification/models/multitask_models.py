@@ -11,10 +11,6 @@ from classification.models.deephs_hyve_net import DeepHSNet_with_HyVEConv
 from classification.models.resnet import BasicBlock, Bottleneck
 from classification.models.resnet_hyve import ResnetHyve
 from dataloader.basic_dataloader import get_channel_wavelengths
-from dataloader.debris_dataloader import CLASS_LABEL_2_ID_MAPPING
-from dataloader.hrss_dataloader import SCENE_2_LABEL_2_ID_MAPPING, Scene
-from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG
-from evaluation import evaluate_predictions_on_test_set
 
 
 

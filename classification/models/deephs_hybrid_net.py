@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 
-from classification.models.deephs_net import DeepHSNet
 
 
 class DeepHSHybridNet(nn.Module):

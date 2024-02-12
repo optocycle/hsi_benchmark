@@ -1,15 +1,9 @@
-from typing import Callable
 
-import pandas as pd
-import torchvision
 
 from classification.model_factory import VALID_MODELS_PRETRAINING
 from deep_learning import *
-from classification.model_factory import save_model
 from evaluation.api import init_evaluation_database
 from torch.utils.data import ConcatDataset, RandomSampler
-from dataloader.basic_dataloader import Dataset, HSDataset
-import re
 
 def get_args():
     parser = argparse.ArgumentParser("DeepHS pretraining + classification:")

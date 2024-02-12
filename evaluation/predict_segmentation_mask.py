@@ -11,7 +11,7 @@ from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG
 
 from dataloader.debris_dataloader import DebrisDataset
 
-from dataloader.hrss_dataloader import RemoteSensingDataset, SCENE_2_CAMERA_MAPPING, str2scene, Scene
+from dataloader.hrss_dataloader import RemoteSensingDataset, SCENE_2_CAMERA_MAPPING, str2scene
 from sample_transforms import Normalize, RemoveLabel
 import os
 import numpy as np

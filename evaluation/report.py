@@ -4,11 +4,11 @@ import tabulate
 import numpy as np
 from camera_definitions import CameraType
 
-from evaluation.metrics import calc_accuracy, calc_mae, calc_pearson_corr, calc_kendalls_tau, calc_precision, \
-    calc_recall, calc_f1
+from evaluation.metrics import calc_accuracy, calc_mae, calc_precision, \
+    calc_recall
 from evaluation.evaluation_db import EvaluationDatabase
 from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG
-from evaluation.result_struct import Accuracy, MAE, DebrisConfiguration, ExperimentResult, FruitResults, OverallAccuracyResults, RawPrediction, RemoteSensingResults, decode_results, encode_results, hparams2struct, RawPredictionConfiguration, RawPrediction, encode_results , decode_results
+from evaluation.result_struct import Accuracy, MAE, DebrisConfiguration, ExperimentResult, FruitResults, OverallAccuracyResults, RemoteSensingResults, hparams2struct, RawPredictionConfiguration, RawPrediction, encode_results , decode_results
 
 
 def value_to_string(mean, std):
@@ -93,7 +93,7 @@ def generate_model_performance_report(for_datasets, db: EvaluationDatabase):
     report = _add_to_report("", report=report)
     report = _add_to_report(overall_report, report=report)
     report = _add_to_report("", report=report)
-    report = _add_to_report(f"### Done.", report=report)
+    report = _add_to_report("### Done.", report=report)
 
 
 
@@ -125,7 +125,7 @@ def _generate_fruit_report(db):
     classification_type = [f.value.lower() for f in ClassificationType]
     camera_types = [CameraType.SPECIM_FX10, CameraType.CORNING_HSI, CameraType.INNOSPEC_REDEYE]
 
-    report = _add_to_report(f"", report=report)
+    report = _add_to_report("", report=report)
     results = {}
 
     total_acc = []
@@ -185,7 +185,7 @@ def _generate_waste_report(db):
     task_types = ['patchwise']
     classes = CLASS_LABEL_2_ID_MAPPING
 
-    report = _add_to_report(f"", report=report)
+    report = _add_to_report("", report=report)
 
     total_acc = []
 
@@ -236,13 +236,13 @@ def _generate_waste_report(db):
 
 def _generate_debris_report(db):
     from dataloader.debris_dataloader import CLASS_LABEL_2_ID_MAPPING
-    from evaluation.result_struct import TaskType, DebrisConfiguration, DebrisResult, DebrisResults
+    from evaluation.result_struct import TaskType, DebrisResult, DebrisResults
     report = "\n## Detailed report for debris data set:"
 
     camera_types = [CameraType.SPECIM_FX10, CameraType.CORNING_HSI]
     classes = CLASS_LABEL_2_ID_MAPPING
 
-    report = _add_to_report(f"", report=report)
+    report = _add_to_report("", report=report)
     results = {}
 
     total_acc = []
@@ -295,11 +295,11 @@ def _generate_debris_report(db):
     return report, DebrisResults(results)
 
 def _generate_hrss_report(db) -> Tuple[str, RemoteSensingResults]:
-    from dataloader.hrss_dataloader import SCENE_2_CAMERA_MAPPING, SCENE_2_LABEL_2_ID_MAPPING, str2scene, Scene
-    from evaluation.result_struct import RemoteSensingResults, RemoteSensingResult
+    from dataloader.hrss_dataloader import SCENE_2_LABEL_2_ID_MAPPING, Scene
+    from evaluation.result_struct import RemoteSensingResult
     report = "\n## Detailed report for HRSS:"
 
-    report = _add_to_report(f"", report=report)
+    report = _add_to_report("", report=report)
     results = {}
 
     total_acc = []
@@ -448,7 +448,7 @@ def _generate_overall_report(db):
     report = _add_to_report(f" Fruit:   {accuracy_to_string(results[1], None)}", report=report)
     report = _add_to_report(f" Remote Sensing:   {accuracy_to_string(results[2], None)}", report=report)
     report = _add_to_report(f" =>   {accuracy_to_string(np.average(results), None)}", report=report)
-    report = _add_to_report(f"##########", report=report)
+    report = _add_to_report("##########", report=report)
 
     return report, OverallAccuracyResults(
         debris=Accuracy(float(results[0]), None),

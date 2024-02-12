@@ -5,9 +5,7 @@ Code source: https://github.com/danfenghong/IEEE_TGRS_SpectralFormer
 
 import torch
 import torch.nn as nn
-import numpy as np
 from einops import rearrange, repeat
-import torchvision.transforms as T
 
 class Residual(nn.Module):
     def __init__(self, fn):

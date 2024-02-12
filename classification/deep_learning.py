@@ -6,11 +6,9 @@ from torch.utils.data import DataLoader
 import time
 from dataloader.dataset_factory import get_data, DataObject
 from dataloader.valid_dataset_configs import *
-from evaluation import evaluate_predictions_on_test_set
-from evaluation.api import report_model_performance, init_evaluation_database
+from evaluation.api import report_model_performance, init_evaluation_database, evaluate_predictions_on_test_set
 from sample_transforms.augment import *
-from classification.model_factory import get_model, VALID_MODELS, get_default_model_hparams, save_model, load_model, \
-    get_pretrained_model, VALID_MODELS_PRETRAINING
+from classification.model_factory import get_model, VALID_MODELS, get_default_model_hparams, save_model, get_pretrained_model, VALID_MODELS_PRETRAINING
 from sample_transforms.pca import PCA
 import os
 

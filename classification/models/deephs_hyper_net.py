@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-import torch
 
 from classification.models.utils.hyve_conv.hyve_convolution import HyVEConv
 from dataloader.basic_dataloader import get_channel_wavelengths

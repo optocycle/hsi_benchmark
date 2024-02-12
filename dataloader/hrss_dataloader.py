@@ -1,11 +1,12 @@
 import enum
-import os
 from collections import namedtuple
 from typing import Tuple
-import numpy as np
 from scipy import io
 import torch
-
+from dataclasses import dataclass
+from minio import Minio
+import json
+from io import BytesIO
 from dataloader.basic_dataloader import HSDataset, bands_as_first_dimension, resize_to_target_size
 from camera_definitions import CameraType, get_wavelengths_for
 
@@ -46,6 +47,37 @@ SCENE_2_CAMERA_MAPPING = {
 RemoteSensingMetaData = namedtuple('RemoteSensingMetaData', ['class_label', 'camera_type', 'wavelengths', 'filename', 'x', 'y', 'config'])
 
 
+@dataclass
+class S3Config:
+    endpoint: str
+    credentials_file: str = "/home/jovan/.minio/credentials.json"
+
+    @property
+    def access_key(self) -> str:
+        self._load_credentials()
+        return self.__loaded_creds.get("accessKey")
+
+    @property
+    def secret_key(self) -> str:
+        self._load_credentials()
+        return self.__loaded_creds.get("secretKey")
+
+    def _load_credentials(self) -> None:
+        if hasattr(self, "__loaded_creds"):
+            return
+        with open(self.credentials_file) as fp:
+            self.__loaded_creds = json.load(fp)
+
+    def get_instance(self, region: str=None) -> Minio:
+        s3 = Minio(
+            endpoint=self.endpoint,
+            access_key=self.access_key,
+            secret_key=self.secret_key,
+            region=region
+        )
+        return s3
+
+
 class RemoteSensingDataset(HSDataset):
     def __init__(self, data_path: str, config: str, scene: Scene = Scene.INDIAN_PINES,
                  split: str = None, balance: bool = False, transform=None,
@@ -57,10 +89,24 @@ class RemoteSensingDataset(HSDataset):
         self.train_ratio = train_ratio
         self.scene = scene
         self.classes = SCENE_2_LABEL_2_ID_MAPPING[self.scene]
-
+        self._s3_config = S3Config(endpoint="s3.office.optocycle.net")
+        self.bucket = "home"
+        self.prepare_connection()
         super().__init__(data_path, config, split, balance, transform)
 
+
+    def prepare_connection(self):
+        self.s3 = self._s3_config.get_instance()
+        self._bucket_region = self.s3._get_region(self.bucket)
+        self._objects = {}
+        for obj in self.s3.list_objects(bucket_name=self.bucket,
+                            prefix="j.cicvaric@optocycle.com/hrss_dataset/",
+                            recursive=False):
+            self._objects[obj.object_name.split('/')[-1]] = obj.object_name
+
+
     def _get_records(self):
+        
         self.image, self.gt_mask = self.get_image_gt()
 
         records = []
@@ -109,20 +155,17 @@ class RemoteSensingDataset(HSDataset):
         return records
 
     def get_image_gt(self):
+        
         if self.scene in [Scene.INDIAN_PINES, Scene.SALINAS]:
-            image_path = os.path.join(self.data_path, self.scene.value[0].upper() + self.scene.value[1:] + '_corrected.mat')
+            image_name = self.scene.value + '_corrected'
         else:
-            image_path = os.path.join(self.data_path, self.scene.value[0].upper() + self.scene.value[1:] + '.mat')
-        mask_path = os.path.join(self.data_path, self.scene.value[0].upper() + self.scene.value[1:] + '_gt.mat')
-
-        image = io.loadmat(image_path)
-        if self.scene.value + "_corrected" in image.keys():
-            image = torch.from_numpy(image[self.scene.value + "_corrected"].astype(float))
-        else:
-            image = torch.from_numpy(image[self.scene.value].astype(float))
+            image_name = self.scene.value
+        image_s3 = self.s3.get_object(bucket_name=self.bucket, object_name=self._objects[image_name[0].upper() + image_name[1:] + '.mat'])
+        image = torch.from_numpy(io.loadmat(BytesIO(image_s3.read()))[image_name].astype(float))
+        
         image = bands_as_first_dimension(image)
-
-        gt_mask = torch.from_numpy(io.loadmat(mask_path)[self.scene.value + '_gt'].astype(int))
+        mask_s3 = self.s3.get_object(bucket_name=self.bucket, object_name=self._objects[self.scene.value[0].upper() + self.scene.value[1:] + '_gt.mat'])
+        gt_mask = torch.from_numpy(io.loadmat(BytesIO(mask_s3.read()))[self.scene.value + '_gt'].astype(int))
 
         return image, gt_mask
 
