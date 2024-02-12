@@ -34,9 +34,9 @@ The data set will be downloaded into the [dataset-folder]. Around 240 GB disk sp
 
 
 ## Installation
-We recommend Python version 3.10. A full list of required packages can be found in the requirements.txt file.
+We recommend Python version 3.10. A full list of required dependencies can be found in the pyproject.toml file.
 The packages can be installed via 
-`pip install -r requirements.txt`
+`poetry install`
 
 
 The code was written and tested on a Linux-based system (Ubuntu). 
@@ -45,9 +45,9 @@ The code was written and tested on a Linux-based system (Ubuntu).
 ## Train a model
 You have to define the root-folder to be part of the PYTHONPATH.
 Then you can train your first model with default configuration:  
-`python classification/deep_learning.py --model deephs_net [dataset-folder]`
+`poetry run python -m classification.deep_learning --model deephs_net  [dataset-folder]`
 
-`python classification/deep_learning.py -h` provides the full list of options. 
+`poetry run python -m classification.deep_learning -h` provides the full list of options. 
 
 ## How to implement a new model
 
