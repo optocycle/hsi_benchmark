@@ -9,7 +9,7 @@ from dataloader.valid_dataset_configs import *
 from evaluation import evaluate_predictions_on_test_set
 from evaluation.api import report_model_performance, init_evaluation_database
 from sample_transforms.augment import *
-from model_factory import get_model, VALID_MODELS, get_default_model_hparams, save_model, load_model, \
+from classification.model_factory import get_model, VALID_MODELS, get_default_model_hparams, save_model, load_model, \
     get_pretrained_model, VALID_MODELS_PRETRAINING
 from sample_transforms.pca import PCA
 import os
