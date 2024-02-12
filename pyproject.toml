@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "hsi-benchmark"
+version = "0.1.0"
+description = ""
+authors = ["cile98 <jovan.cicvaric@yahoo.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "1.24.2"
+torch = "1.13.1"
+spectral = "0.23.1"
+opencv-python = "4.7.0.72"
+scikit-learn = "1.2.2"
+scikit-image = "0.20.0"
+tabulate = "0.9.0"
+tqdm = "4.65.0"
+einops = "0.6.0"
+matplotlib = "^3.8.2"
+seaborn = "0.12.2"
+torchvision = {url = "https://download.pytorch.org/whl/cu116/torchvision-0.14.1%2Bcu116-cp310-cp310-linux_x86_64.whl"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
