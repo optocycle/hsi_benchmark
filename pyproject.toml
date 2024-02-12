@@ -18,7 +18,7 @@ tqdm = "4.65.0"
 einops = "0.6.0"
 matplotlib = "^3.8.2"
 seaborn = "0.12.2"
-torchvision = {url = "https://download.pytorch.org/whl/cu116/torchvision-0.14.1%2Bcu116-cp310-cp310-linux_x86_64.whl"}
+torchvision = {url = "https://download.pytorch.org/whl/cu117/torchvision-0.14.1%2Bcu117-cp310-cp310-linux_x86_64.whl"}
 
 
 [build-system]

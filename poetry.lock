@@ -1246,12 +1246,12 @@ opt-einsum = ["opt-einsum (>=3.3)"]
 
 [[package]]
 name = "torchvision"
-version = "0.14.1+cu116"
+version = "0.14.1+cu117"
 description = "image and video datasets and models for torch deep learning"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "torchvision-0.14.1+cu116-cp310-cp310-linux_x86_64.whl", hash = "sha256:fcb58d41bf95dd8b85d388fa1969d1dcad55eec055e317981d653a05c4ca6d8b"},
+    {file = "torchvision-0.14.1+cu117-cp310-cp310-linux_x86_64.whl", hash = "sha256:83d271a530392814b8c7f69382285cac7c7da79b8f5dcc6bcf56c628547bce53"},
 ]
 
 [package.dependencies]
@@ -1266,7 +1266,7 @@ scipy = ["scipy"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cu116/torchvision-0.14.1%2Bcu116-cp310-cp310-linux_x86_64.whl"
+url = "https://download.pytorch.org/whl/cu117/torchvision-0.14.1%2Bcu117-cp310-cp310-linux_x86_64.whl"
 
 [[package]]
 name = "tqdm"
@@ -1344,4 +1344,4 @@ test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "1f2f81b406525f16a3ff09830aa9bdb40ef3ff526b012f9736fc731c48bf48b7"
+content-hash = "a18a7960055025ed7e314013f799c421f6949295dbe6c7f741ddd8e222448b97"
