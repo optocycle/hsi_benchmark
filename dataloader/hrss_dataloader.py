@@ -3,10 +3,8 @@ from collections import namedtuple
 from typing import Tuple
 from scipy import io
 import torch
-from dataclasses import dataclass
-from minio import Minio
-import json
 from io import BytesIO
+from dataloader.s3_config import S3Config
 from dataloader.basic_dataloader import HSDataset, bands_as_first_dimension, resize_to_target_size
 from camera_definitions import CameraType, get_wavelengths_for
 
@@ -47,41 +45,12 @@ SCENE_2_CAMERA_MAPPING = {
 RemoteSensingMetaData = namedtuple('RemoteSensingMetaData', ['class_label', 'camera_type', 'wavelengths', 'filename', 'x', 'y', 'config'])
 
 
-@dataclass
-class S3Config:
-    endpoint: str
-    credentials_file: str = "/home/jovan/.minio/credentials.json"
-
-    @property
-    def access_key(self) -> str:
-        self._load_credentials()
-        return self.__loaded_creds.get("accessKey")
-
-    @property
-    def secret_key(self) -> str:
-        self._load_credentials()
-        return self.__loaded_creds.get("secretKey")
-
-    def _load_credentials(self) -> None:
-        if hasattr(self, "__loaded_creds"):
-            return
-        with open(self.credentials_file) as fp:
-            self.__loaded_creds = json.load(fp)
-
-    def get_instance(self, region: str=None) -> Minio:
-        s3 = Minio(
-            endpoint=self.endpoint,
-            access_key=self.access_key,
-            secret_key=self.secret_key,
-            region=region
-        )
-        return s3
 
 
 class RemoteSensingDataset(HSDataset):
     def __init__(self, data_path: str, config: str, scene: Scene = Scene.INDIAN_PINES,
                  split: str = None, balance: bool = False, transform=None,
-                 drop_invalid: bool = False, dilation: int = 1, patch_size: int = 63, target_size: Tuple = None, train_ratio=0.3):
+                 drop_invalid: bool = False, dilation: int = 1, patch_size: int = 63, target_size: Tuple = None, train_ratio=0.3, bucket: str = "home"):
         self.drop_invalid = drop_invalid
         self.dilation = dilation
         self.patch_size = patch_size
@@ -90,7 +59,7 @@ class RemoteSensingDataset(HSDataset):
         self.scene = scene
         self.classes = SCENE_2_LABEL_2_ID_MAPPING[self.scene]
         self._s3_config = S3Config(endpoint="s3.office.optocycle.net")
-        self.bucket = "home"
+        self.bucket = bucket
         self.prepare_connection()
         super().__init__(data_path, config, split, balance, transform)
 
@@ -126,8 +95,7 @@ class RemoteSensingDataset(HSDataset):
 
                 records.append(
                     {
-                        'path': self.data_path,
-                        'filename': self.data_path.split('/')[-1],
+                        'filename': self.dataset_name,
                         'class_label': self.classes[center_label],
                         'class_id': center_label,
                         'camera_type': camera_type,
@@ -141,8 +109,7 @@ class RemoteSensingDataset(HSDataset):
                     }
                 )
 
-        self._data[records[-1]['path']] = self.image
-
+        self._data[records[-1]['filename']] = self.image
         if self.split:
             train_records, val_records, test_records = split_train_val_test_set(self.scene, records, train_ratio=self.train_ratio)
             if self.split == 'train':
@@ -186,10 +153,10 @@ class RemoteSensingDataset(HSDataset):
         x2 = int(sample['x2'])
         y = int(sample['y1'])
         y2 = int(sample['y2'])
-        sample_shape = self._data[sample['path']].shape
+        sample_shape = self._data[sample['filename']].shape
         item = torch.zeros((sample_shape[0], self.patch_size, self.patch_size))
         item[:, -min(0, x):self.patch_size - max(0, x2 - sample_shape[1]),
-        -min(0, y):self.patch_size - max(0, y2 - sample_shape[2])] = self._data[sample['path']][:,
+        -min(0, y):self.patch_size - max(0, y2 - sample_shape[2])] = self._data[sample['filename']][:,
                                                                      max(x, 0):min(x2, sample_shape[1]),
                                                                      max(y, 0):min(sample_shape[2], y2)]
 
@@ -246,31 +213,4 @@ def split_train_val_test_set(scene, records, train_ratio=0.3):
     val_records = [r for r in records if ((r['xc'], r['yc']) in val_pixels)]
     test_records = [r for r in records if ((r['xc'], r['yc']) in test_pixels)]
 
-    return train_records, val_records, test_records
-
-
-if __name__ == '__main__':
-    import random
-    print("# Generate random order of the annotated pixels for a deterministic train-val-test split")
-    for scene in (Scene.INDIAN_PINES, Scene.PAVIA_UNIVERSITY, Scene.SALINAS):
-        dataset = RemoteSensingDataset("/data/datasets/hrss_dataset", scene=scene)
-
-        print(f"# Scene {scene.value}")
-        scene_classes = []
-        total_pixels = 0
-        for class_id in range(dataset.gt_mask.min(), dataset.gt_mask.max() + 1):
-            print(f"# Class {class_id}")
-            scene_class_name = scene.value.upper() + "_" + str(class_id)
-            l = ((dataset.gt_mask == class_id).nonzero(as_tuple=False).tolist())
-            total_pixels += len(l)
-            random.shuffle(l)
-            print(f"{scene_class_name} = {l}")
-            scene_classes.append(scene_class_name)
-
-        print(f"total {total_pixels}")
-
-        print(f"{scene.value.upper()}_CLASSES = [{', '.join(scene_classes)}]")
-
-
-
-    
+    return train_records, val_records, test_records    

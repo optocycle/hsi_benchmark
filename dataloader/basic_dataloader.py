@@ -17,6 +17,7 @@ class HSDataset(Dataset, ABC):
     '''
     def __init__(self, data_path: str, config: str, split: str = None, balance: bool = False, transform=None):
         self.data_path = data_path
+        self.dataset_name = data_path.split("/")[-1]
         self.config = config
 
         self.split = split
