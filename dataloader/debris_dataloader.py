@@ -9,6 +9,7 @@ from camera_definitions import CameraType, get_wavelengths_for
 from dataloader.splits import debris_sets
 from torch import multiprocessing
 from torch.utils.data import get_worker_info
+import tempfile
 
 DebrisMetaData = namedtuple('DebrisMetaData', ['class_label', 'camera_type', 'wavelengths', 'filename', 'config'])
 
@@ -185,11 +186,17 @@ class DebrisDataset(HSDataset):
             item = resize_to_target_size(item, self.target_size)
         else:
             # bad and slow solution
-            s3.fget_object(bucket_name=self.bucket, object_name=self._objects[sample['filename']], file_path=sample['filename'].replace('/', '_'))
-            s3.fget_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'].replace('.hdr', '.bin')], file_path=sample['filename'].replace('/', '_').replace('.hdr', '.bin'))
-            item = torch.tensor(load_recording(sample['filename'].replace('/', '_').rstrip('.hdr'), spatial_size=self.target_size))
-            os.remove(sample['filename'].replace('/', '_'))
-            os.remove(sample['filename'].replace('/', '_').replace('.hdr', '.bin'))
+            s3_hdr = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename']])
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.hdr') as temp:
+                temp.write(s3_hdr.data)
+                temp_hdr = temp.name
+            s3_bin = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'].replace('.hdr', '.bin')])
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.bin') as temp:
+                temp.write(s3_bin.data)
+                temp_bin = temp.name
+            item = torch.tensor(load_recording(hdr_name=temp_hdr, bin_name=temp_bin, spatial_size=self.target_size))
+            os.remove(temp_bin)
+            os.remove(temp_hdr)
 
         if self.transform is not None:
             item, label, meta_data = self.transform([item, label, meta_data])

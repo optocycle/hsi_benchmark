@@ -107,8 +107,8 @@ def find_hdr_files_in_path(data_path: str):
     return main_files
 
 # TODO rewrite 
-def load_recording(path: str, spatial_size: Tuple):
-    _header, _data = envi.load_envi(path)
+def load_recording(hdr_name, bin_name, spatial_size: Tuple):
+    _header, _data = envi.load_envi(hdr_name, bin_name)
     if spatial_size is not None:
         _data = cv2.resize(_data, dsize=spatial_size, interpolation=cv2.INTER_CUBIC)
     _data = np.array(_data)

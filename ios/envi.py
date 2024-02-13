@@ -1,24 +1,14 @@
 import os
 import numpy as np
 import spectral.io.envi as envi
-import spectral
 
 
-def load_envi(path):
-    _exts = '.bin'
-    if not os.path.exists('%s%s' % (path, _exts)):
-        _exts = '.img'
-    if not os.path.exists('%s%s' % (path, _exts)):
-        _exts = '.raw'
-
-    if not os.path.exists('%s%s' % (path, _exts)):
-        raise spectral.io.spyfile.FileNotFoundError("Could not find data for: %s" % path)
-
-    envi_header = envi.open('%s.hdr' % path, image='%s%s' % (path, _exts))
+def load_envi(hdr_name, bin_name):
+    envi_header = envi.open(hdr_name, image=bin_name)
     envi_data = envi_header.load()
 
     if envi_header.bands.centers is not None and len(envi_header.bands.centers) > 300:
-        print(f"Apply binning to {path}")
+        print(f"Apply binning to {hdr_name}")
         envi_data = simulate_binning(envi_data, 2)
     return envi_header, envi_data
 
