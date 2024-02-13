@@ -89,6 +89,8 @@ def bands_as_first_dimension_rev(_obj):
 
 # TODO rewrite 
 def find_hdr_files_in_path(data_path: str):
+    if not os.path.exists(data_path):
+        raise ValueError("Path does not exist: %s" % data_path)
     list_of_files = glob.glob(os.path.join(data_path, "*.hdr"))
     if len(list_of_files) == 0:
         list_of_files = glob.glob(os.path.join(data_path, "**/*.hdr"))

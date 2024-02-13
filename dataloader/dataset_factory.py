@@ -51,9 +51,9 @@ def get_data(dataset_config, data_set_root, augmentations: List = []):
 
 def _get_data(dataset_config, data_set_root, without_test_labels=True, augmentations: List = []):
     DATASET_2_DIRECTORY_MAPPING = {
-     #   'debris': os.path.join(data_set_root, 'Debris/'),  # TODO: set paths?!
+        'debris': os.path.join(data_set_root, 'Debris/'),  # TODO: set paths?!
      #   'fruit': os.path.join(data_set_root, 'Fruits/'),
-        'remote_sensing': os.path.join(data_set_root, 'hrss_dataset'),#"j.cicvaric@optocycle.com/hrss_dataset"
+     #   'remote_sensing': os.path.join(data_set_root, 'hrss_dataset'),#"j.cicvaric@optocycle.com/hrss_dataset"
         }
     assert dataset_config in VALID_DATASET_CONFIG
 
