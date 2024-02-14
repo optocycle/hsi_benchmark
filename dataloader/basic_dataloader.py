@@ -110,6 +110,7 @@ def find_hdr_files_in_path(data_path: str):
 def load_recording(hdr_name, bin_name, spatial_size: Tuple):
     _header, _data = envi.load_envi(hdr_name, bin_name)
     if spatial_size is not None:
+        # we could save this data to disk and load it again without needing to deal with envi files
         _data = cv2.resize(_data, dsize=spatial_size, interpolation=cv2.INTER_CUBIC)
     _data = np.array(_data)
     return bands_as_first_dimension(_data)

@@ -33,12 +33,9 @@ class DebrisDataset(HSDataset):
         self.bucket = bucket
         self._s3_inst = None
         self._s3_inst_lock = multiprocessing.Lock()
-
-        self.prepare_connection()
         super().__init__(data_path, config, split, balance, transform)
 
 
-    # TODO move it to a separate class and inherit from it
     def prepare_connection(self):
         s3 = self._s3_config.get_instance()
         self._bucket_region = s3._get_region(self.bucket)
@@ -47,7 +44,7 @@ class DebrisDataset(HSDataset):
                             prefix="j.cicvaric@optocycle.com/Debris/",
                             recursive=True):
             self._objects['/'.join(obj.object_name.split('/')[2:])] = obj.object_name
-
+        return s3
 
     # TODO move it to a separate class and inherit from it
     def find_hdr_files_in_minio(self, camera_type):
@@ -56,12 +53,13 @@ class DebrisDataset(HSDataset):
             if filename.endswith("_White.hdr") or filename.endswith("_Dark.hdr"):
                 continue
             if filename.endswith('.hdr') and camera_type in filename:
-                main_files.append(filename)
+                main_files.append(filename.rstrip('.hdr'))
 
         return main_files
 
 
     def _get_records(self):
+        s3 = self.prepare_connection()
         # filter by camera type
         if self.camera_type == CameraType.ALL:
             hdr_files_all = []
@@ -78,10 +76,10 @@ class DebrisDataset(HSDataset):
             assert self.split in ('train', 'val', 'test')
             hdr_files = []
             for hdr_file in hdr_files_all:
-                if hdr_file.split('/')[-1].split('.')[0] in debris_sets.validation_set:
+                if hdr_file.split('/')[-1] in debris_sets.validation_set:
                     if self.split == 'val':
                         hdr_files.append(hdr_file)
-                elif hdr_file.split('/')[-1].split('.')[0] in debris_sets.test_set:
+                elif hdr_file.split('/')[-1] in debris_sets.test_set:
                     if self.split == 'test':
                         hdr_files.append(hdr_file)
                 elif self.split == 'train':
@@ -91,25 +89,31 @@ class DebrisDataset(HSDataset):
 
         records = []
         self._data = {}
-
         for hdr_file in tqdm.tqdm(hdr_files):
             path_parts = hdr_file.split('/')
             # class_label = path_parts[-1].split('_') # old
             # class_label = '_'.join(class_label[:-2]) # old
             class_label = path_parts[-1].split('_')[0]
             class_label = 'other' if class_label in CLASS_OTHER else class_label
-            # TODO rewrite
-
-            if 'CORNING_HSI' in os.path.join(self.data_path, hdr_file):
+            # TODO check how many s3 connections we actually have
+            # TODO we could save this data to disk and load it again without needing to deal with envi files
+            if 'CORNING_HSI' in hdr_file:
                 camera_type = CameraType.CORNING_HSI
-            elif 'SPECIM_FX10' in os.path.join(self.data_path, hdr_file):
+            elif 'SPECIM_FX10' in hdr_file:
                 camera_type = CameraType.SPECIM_FX10
             assert camera_type is not None
-            path = os.path.join(self.data_path, hdr_file)
 
             if self.patch_size is not None: # patch-wise
                 # find pixels
-                recording = load_recording(path, None)
+                s3_hdr = s3.get_object(bucket_name=self.bucket, object_name=self._objects[hdr_file + '.hdr'])
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.hdr') as temp:
+                    temp.write(s3_hdr.data)
+                    temp_hdr = temp.name
+                s3_bin = s3.get_object(bucket_name=self.bucket, object_name=self._objects[hdr_file + '.bin'])
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.bin') as temp:
+                    temp.write(s3_bin.data)
+                    temp_bin = temp.name
+                recording = load_recording(temp_hdr, temp_bin, None)
                 recording = torch.tensor(recording)
 
                 pixels = recording.permute(1, 2, 0)
@@ -125,25 +129,27 @@ class DebrisDataset(HSDataset):
 
                         records.append(
                             {
-                                'path': path,
                                 'filename': hdr_file,
                                 'class_label': class_label,
                                 'class_id': self.classes.index(class_label),
                                 'camera_type': camera_type,
                                 'wavelengths': get_wavelengths_for(camera_type),
-                                'x1': x - (self.patch_size // 2),
-                                'x2': x + (self.patch_size // 2) + 1,
-                                'y1': y - (self.patch_size // 2),
-                                'y2': y + (self.patch_size // 2) + 1,
                             }
                         )
-
-                        self._data[records[-1]['path']] = recording
+                        x1 = x - (self.patch_size // 2)
+                        x2 = x + (self.patch_size // 2) + 1
+                        y1 = y - (self.patch_size // 2)
+                        y2 = y + (self.patch_size // 2) + 1
+                        sample_shape = recording.shape
+                        item = torch.zeros((sample_shape[0], self.patch_size, self.patch_size))
+                        item[:, -min(0, x1):self.patch_size - max(0, x2 - sample_shape[1]),
+                        -min(0, y1):self.patch_size - max(0, y2 - sample_shape[2])] = recording[:, max(x1, 0):min(x2, sample_shape[1]), max(y1, 0):min(sample_shape[2], y2)]
+                        item = resize_to_target_size(item, self.target_size)
+                        self._data[records[-1]['path']] = item
 
             else:  # whole image
                 records.append(
                     {
-                        'path': path,
                         'filename': hdr_file,
                         'class_label': class_label,
                         'class_id': self.classes.index(class_label),
@@ -155,16 +161,6 @@ class DebrisDataset(HSDataset):
         return records
 
     def __getitem__(self, index) -> tuple[torch.Tensor, torch.Tensor, object]:
-        worker_info = get_worker_info()
-        worker_id = 0 if worker_info is None else worker_info.id
-        with self._s3_inst_lock:
-            if self._s3_inst is None:
-                self._s3_inst = [None for _ in range(worker_info.num_workers if worker_info else 1)]
-            if self._s3_inst[worker_id] is None:
-                self._s3_inst[worker_id] = self._s3_config.get_instance(region=self._bucket_region)
-        s3 = self._s3_inst[worker_id]
-
-        
         sample = self.records[index]
         label = torch.tensor(sample['class_id'])
         meta_data = DebrisMetaData(
@@ -175,22 +171,24 @@ class DebrisDataset(HSDataset):
             config=self.config)
 
         if self.patch_size is not None:
-            x = int(sample['x1'])
-            x2 = int(sample['x2'])
-            y = int(sample['y1'])
-            y2 = int(sample['y2'])
-            sample_shape = self._data[sample['path']].shape
-            item = torch.zeros((sample_shape[0], self.patch_size, self.patch_size))
-            item[:, -min(0, x):self.patch_size - max(0, x2 - sample_shape[1]),
-            -min(0, y):self.patch_size - max(0, y2 - sample_shape[2])] = self._data[sample['path']][:, max(x, 0):min(x2, sample_shape[1]), max(y, 0):min(sample_shape[2], y2)]
-            item = resize_to_target_size(item, self.target_size)
+            
+            item = self._data[sample['path']]
         else:
-            # bad and slow solution
-            s3_hdr = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename']])
+
+            worker_info = get_worker_info()
+            worker_id = 0 if worker_info is None else worker_info.id
+            with self._s3_inst_lock:
+                if self._s3_inst is None:
+                    self._s3_inst = [None for _ in range(worker_info.num_workers if worker_info else 1)]
+                if self._s3_inst[worker_id] is None:
+                    self._s3_inst[worker_id] = self._s3_config.get_instance(region=self._bucket_region)
+            s3 = self._s3_inst[worker_id]
+
+            s3_hdr = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'] + '.hdr'])
             with tempfile.NamedTemporaryFile(delete=False, suffix='.hdr') as temp:
                 temp.write(s3_hdr.data)
                 temp_hdr = temp.name
-            s3_bin = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'].replace('.hdr', '.bin')])
+            s3_bin = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'] + '.bin'])
             with tempfile.NamedTemporaryFile(delete=False, suffix='.bin') as temp:
                 temp.write(s3_bin.data)
                 temp_bin = temp.name
