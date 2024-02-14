@@ -4,15 +4,12 @@ from typing import Tuple
 import torch
 import tqdm as tqdm
 from dataloader.s3_config import S3Config
-from dataloader.basic_dataloader import HSDataset, bands_as_first_dimension, resize_to_target_size
+from dataloader.basic_dataloader import HSDataset, load_recording, resize_to_target_size
 from camera_definitions import CameraType, get_wavelengths_for
 from dataloader.splits import debris_sets
 from torch import multiprocessing
 from torch.utils.data import get_worker_info
-import numpy as np
-from io import BytesIO
-import cv2
-
+import tempfile
 
 DebrisMetaData = namedtuple('DebrisMetaData', ['class_label', 'camera_type', 'wavelengths', 'filename', 'config'])
 
@@ -32,7 +29,7 @@ class DebrisDataset(HSDataset):
         self.target_size = target_size
         self.camera_type = camera_type
         self.classes = CLASS_LABEL_2_ID_MAPPING
-        self._s3_config = S3Config(endpoint="minio.minio.svc:9000")
+        self._s3_config = S3Config(endpoint="s3.office.optocycle.net")
         self.bucket = bucket
         self._s3_inst = None
         self._s3_inst_lock = multiprocessing.Lock()
@@ -44,19 +41,19 @@ class DebrisDataset(HSDataset):
         self._bucket_region = s3._get_region(self.bucket)
         self._objects = {}
         for obj in s3.list_objects(bucket_name=self.bucket,
-                            prefix="j.cicvaric@optocycle.com/Debris_numpy/",
+                            prefix="j.cicvaric@optocycle.com/Debris/",
                             recursive=True):
             self._objects['/'.join(obj.object_name.split('/')[2:])] = obj.object_name
         return s3
 
-
-    def find_npy_files_in_minio(self, camera_type):
+    # TODO move it to a separate class and inherit from it
+    def find_hdr_files_in_minio(self, camera_type):
         main_files = []
         for filename in self._objects:
-            if filename.endswith("_White.npy") or filename.endswith("_Dark.npy"):
+            if filename.endswith("_White.hdr") or filename.endswith("_Dark.hdr"):
                 continue
-            if camera_type in filename:
-                main_files.append(filename.rstrip('.npy'))
+            if filename.endswith('.hdr') and camera_type in filename:
+                main_files.append(filename.rstrip('.hdr'))
 
         return main_files
 
@@ -67,12 +64,12 @@ class DebrisDataset(HSDataset):
         if self.camera_type == CameraType.ALL:
             hdr_files_all = []
             for camera in [CameraType.SPECIM_FX10, CameraType.CORNING_HSI]:
-                hdr_files_camera = self.find_npy_files_in_minio(camera.value)
+                hdr_files_camera = self.find_hdr_files_in_minio(camera.value)
                 hdr_files_all += hdr_files_camera
         else:
             self.data_path = os.path.join(self.data_path, self.camera_type.value)
 
-            hdr_files_all = self.find_npy_files_in_minio(self.camera_type.value)
+            hdr_files_all = self.find_hdr_files_in_minio(self.camera_type.value)
 
         # filter by split
         if self.split is not None:
@@ -106,9 +103,15 @@ class DebrisDataset(HSDataset):
 
             if self.patch_size is not None: # patch-wise
                 # find pixels
-                s3_npy = s3.get_object(bucket_name=self.bucket, object_name=self._objects[hdr_file + '.npy'])
-                image_np = np.load(BytesIO(s3_npy.read()))
-                recording = bands_as_first_dimension(image_np)
+                s3_hdr = s3.get_object(bucket_name=self.bucket, object_name=self._objects[hdr_file + '.hdr'])
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.hdr') as temp:
+                    temp.write(s3_hdr.data)
+                    temp_hdr = temp.name
+                s3_bin = s3.get_object(bucket_name=self.bucket, object_name=self._objects[hdr_file + '.bin'])
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.bin') as temp:
+                    temp.write(s3_bin.data)
+                    temp_bin = temp.name
+                recording = load_recording(temp_hdr, temp_bin, None, hdr_file)
                 recording = torch.tensor(recording)
                 sample_shape = recording.shape
                 pixels = recording.permute(1, 2, 0)
@@ -131,6 +134,7 @@ class DebrisDataset(HSDataset):
                                 'wavelengths': get_wavelengths_for(camera_type),
                             }
                         )
+                        # TODO test with numpy 
                         # actually takes more memory since we store a lot of patches
                         # but faster since we don't have to process it  
                         # add option to evaluate on specific datasets. No need to use all 3 every time
@@ -181,11 +185,17 @@ class DebrisDataset(HSDataset):
                     self._s3_inst[worker_id] = self._s3_config.get_instance(region=self._bucket_region)
             s3 = self._s3_inst[worker_id]
 
-            s3_np = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'] + '.npy'])
-            image = np.load(BytesIO(s3_np.read()))
-            _data = cv2.resize(image, dsize=self.spatial_size, interpolation=cv2.INTER_CUBIC)
-            _data = np.array(_data)
-            item = torch.tensor(bands_as_first_dimension(_data))
+            s3_hdr = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'] + '.hdr'])
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.hdr') as temp:
+                temp.write(s3_hdr.data)
+                temp_hdr = temp.name
+            s3_bin = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'] + '.bin'])
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.bin') as temp:
+                temp.write(s3_bin.data)
+                temp_bin = temp.name
+            item = torch.tensor(load_recording(hdr_name=temp_hdr, bin_name=temp_bin, spatial_size=self.target_size))
+            os.remove(temp_bin)
+            os.remove(temp_hdr)
 
         if self.transform is not None:
             item, label, meta_data = self.transform([item, label, meta_data])
