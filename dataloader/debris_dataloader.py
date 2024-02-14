@@ -32,7 +32,7 @@ class DebrisDataset(HSDataset):
         self.target_size = target_size
         self.camera_type = camera_type
         self.classes = CLASS_LABEL_2_ID_MAPPING
-        self._s3_config = S3Config(endpoint="minio.minio.svc:9000")
+        self._s3_config = S3Config(endpoint="s3.office.optocycle.net")
         self.bucket = bucket
         self._s3_inst = None
         self._s3_inst_lock = multiprocessing.Lock()
@@ -183,7 +183,7 @@ class DebrisDataset(HSDataset):
 
             s3_np = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'] + '.npy'])
             image = np.load(BytesIO(s3_np.read()))
-            _data = cv2.resize(image, dsize=self.spatial_size, interpolation=cv2.INTER_CUBIC)
+            _data = cv2.resize(image, dsize=self.target_size, interpolation=cv2.INTER_CUBIC)
             _data = np.array(_data)
             item = torch.tensor(bands_as_first_dimension(_data))
 
