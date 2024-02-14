@@ -115,7 +115,7 @@ class DebrisDataset(HSDataset):
                     temp_bin = temp.name
                 recording = load_recording(temp_hdr, temp_bin, None)
                 recording = torch.tensor(recording)
-
+                sample_shape = recording.shape
                 pixels = recording.permute(1, 2, 0)
                 for x in range(0, len(pixels), self.dilation):
                     row = pixels[x]
@@ -140,12 +140,11 @@ class DebrisDataset(HSDataset):
                         x2 = x + (self.patch_size // 2) + 1
                         y1 = y - (self.patch_size // 2)
                         y2 = y + (self.patch_size // 2) + 1
-                        sample_shape = recording.shape
                         item = torch.zeros((sample_shape[0], self.patch_size, self.patch_size))
                         item[:, -min(0, x1):self.patch_size - max(0, x2 - sample_shape[1]),
                         -min(0, y1):self.patch_size - max(0, y2 - sample_shape[2])] = recording[:, max(x1, 0):min(x2, sample_shape[1]), max(y1, 0):min(sample_shape[2], y2)]
                         item = resize_to_target_size(item, self.target_size)
-                        self._data[records[-1]['path']] = item
+                        self._data[records[-1]['filename']] = item
 
             else:  # whole image
                 records.append(
@@ -172,7 +171,7 @@ class DebrisDataset(HSDataset):
 
         if self.patch_size is not None:
             
-            item = self._data[sample['path']]
+            item = self._data[sample['filename']]
         else:
 
             worker_info = get_worker_info()
