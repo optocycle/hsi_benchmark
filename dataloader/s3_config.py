@@ -28,6 +28,7 @@ class S3Config:
             endpoint=self.endpoint,
             access_key=self.access_key,
             secret_key=self.secret_key,
-            region=region
+            region=region,
+            secure=False
         )
         return s3

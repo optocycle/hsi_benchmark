@@ -1,8 +1,8 @@
 VALID_DEBRIS_DATASET_CONFIG = {
- #   'debris/SPECIM_FX10/objectwise',
- #   'debris/CORNING_HSI/objectwise',
-    'debris/SPECIM_FX10/patchwise',
-    'debris/CORNING_HSI/patchwise',
+    'debris/SPECIM_FX10/objectwise',
+    'debris/CORNING_HSI/objectwise',
+   # 'debris/SPECIM_FX10/patchwise',
+ #   'debris/CORNING_HSI/patchwise',
 }
 
 VALID_FRUIT_DATASET_CONFIG = {
