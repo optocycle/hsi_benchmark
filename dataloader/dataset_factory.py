@@ -44,9 +44,9 @@ class DataObject(object):
                                                                                len(self.datasets.val),
                                                                                len(self.datasets.test)))
 
-
+# why would we remove test labels here?
 def get_data(dataset_config, data_set_root, augmentations: List = []):
-    return _get_data(dataset_config, without_test_labels=True, augmentations=augmentations, data_set_root=data_set_root)
+    return _get_data(dataset_config, without_test_labels=False, augmentations=augmentations, data_set_root=data_set_root)
 
 
 def _get_data(dataset_config, data_set_root, without_test_labels=True, augmentations: List = []):

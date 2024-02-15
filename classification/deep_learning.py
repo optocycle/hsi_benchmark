@@ -184,13 +184,15 @@ def test(model: nn.Module, test_loader: DataLoader, hparams, pca: PCA = None):
     model.eval()
 
     prediction = []
-    for x, _, meta in test_loader:
+    gt = []
+    for x, y_gt,  meta in test_loader:
         if pca is not None:
             x = pca(x)
         y_pred = model(x.to(hparams['device']), meta_data=meta).argmax(-1).cpu().detach()
+        gt += [y_.item() for y_ in y_gt]
         prediction += [y_.item() for y_ in y_pred]
 
-    return np.asarray(prediction)
+    return np.asarray(prediction), np.asarray(gt)
 
 
 if __name__ == '__main__':
@@ -278,10 +280,10 @@ if __name__ == '__main__':
                 print("Best model checkpoint stored")
 
             # test
-            prediction = test(best_model, test_loader, hparams, pca)
+            prediction, ground_truth = test(best_model, test_loader, hparams, pca)
             print('Prediction: {}'.format(prediction))
-
-            evaluate_predictions_on_test_set(config, prediction, random_seed=seed, data_set_root=hparams['data_set_root'])
+            print('Ground truth: {}'.format(ground_truth))
+            evaluate_predictions_on_test_set(config, prediction, ground_truth, random_seed=seed, data_set_root=hparams['data_set_root'])
 
     report_model_performance()
 

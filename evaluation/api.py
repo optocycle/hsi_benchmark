@@ -7,12 +7,12 @@ from evaluation.report import generate_model_performance_report, generate_short_
 EVALUATION_DATABASE_SINGLETON = EvaluationDatabase()
 
 # TODO pass test loader everwhere
-def evaluate_predictions_on_test_set(dataset_name: str, predicition: List[int], test_loader, data_set_root: str, _db=None, random_seed: int=0):
+def evaluate_predictions_on_test_set(dataset_name: str, predicition: List[int], ground_truth, data_set_root: str, _db=None, random_seed: int=0):
     if _db is None:
         _db = EVALUATION_DATABASE_SINGLETON
     _db.add_predictions(dataset_name=dataset_name, y=predicition, random_seed=random_seed)
     if not _db.has_groundtruths_for(dataset_name):
-        _db.add_groundtruths(dataset_name=dataset_name, y=_get_ground_truths(test_loader))
+        _db.add_groundtruths(dataset_name=dataset_name, y=ground_truth)
 
 
 def report_model_performance(for_datasets=VALID_DATASET_CONFIG, _db=None, short=False, verbose=True):
