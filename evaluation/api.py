@@ -1,18 +1,18 @@
 from typing import List
 
 from dataloader.valid_dataset_configs import VALID_DATASET_CONFIG
-from dataloader.dataset_factory import _get_data
 from evaluation.evaluation_db import EvaluationDatabase
 from evaluation.report import generate_model_performance_report, generate_short_report
 
 EVALUATION_DATABASE_SINGLETON = EvaluationDatabase()
 
-def evaluate_predictions_on_test_set(dataset_name: str, predicition: List[int], data_set_root: str, _db=None, random_seed: int=0):
+# TODO pass test loader everwhere
+def evaluate_predictions_on_test_set(dataset_name: str, predicition: List[int], test_loader, data_set_root: str, _db=None, random_seed: int=0):
     if _db is None:
         _db = EVALUATION_DATABASE_SINGLETON
     _db.add_predictions(dataset_name=dataset_name, y=predicition, random_seed=random_seed)
     if not _db.has_groundtruths_for(dataset_name):
-        _db.add_groundtruths(dataset_name=dataset_name, y=_get_ground_truths(dataset_name, data_set_root=data_set_root))
+        _db.add_groundtruths(dataset_name=dataset_name, y=_get_ground_truths(test_loader))
 
 
 def report_model_performance(for_datasets=VALID_DATASET_CONFIG, _db=None, short=False, verbose=True):
@@ -29,12 +29,8 @@ def report_model_performance(for_datasets=VALID_DATASET_CONFIG, _db=None, short=
     return report
 
 
-def _get_ground_truths(dataset_name: str, data_set_root: str):
-    dataset_info = _get_data(dataset_name, without_test_labels=False, data_set_root=data_set_root)
-    if dataset_info is None:
-        raise RuntimeError(f"Unknown data set: {dataset_name}")
-
-    gts = [y for _, y, _ in dataset_info.datasets.test]
+def _get_ground_truths(test_loader):
+    gts = [y for _, y, _ in test_loader]
     return gts
 
 def init_evaluation_database(verbose=True, hparams=None):

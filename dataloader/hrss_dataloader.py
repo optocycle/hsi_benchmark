@@ -58,7 +58,7 @@ class RemoteSensingDataset(HSDataset):
         self.train_ratio = train_ratio
         self.scene = scene
         self.classes = SCENE_2_LABEL_2_ID_MAPPING[self.scene]
-        self._s3_config = S3Config(endpoint="s3.office.optocycle.net")
+        self._s3_config = S3Config(endpoint="minio.minio.svc:9000")
         self.bucket = bucket
         self.prepare_connection()
         super().__init__(data_path, config, split, balance, transform)
