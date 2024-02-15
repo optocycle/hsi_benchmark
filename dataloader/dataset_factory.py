@@ -96,7 +96,7 @@ def _get_data(dataset_config, data_set_root, without_test_labels=True, augmentat
                                   config=dataset_config,
                                   split='test',
                                   camera_type=camera_type,
-                                  patch_size=patch_size, dilation=1,  # dilation=1 for test set
+                                  patch_size=patch_size, dilation=5,  # dilation=1 for test set
                                   target_size=target_size,
                                   transform=test_data_transforms,
                                   # drop_background=False,
