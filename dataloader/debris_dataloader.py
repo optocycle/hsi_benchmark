@@ -32,7 +32,7 @@ class DebrisDataset(HSDataset):
         self.target_size = target_size
         self.camera_type = camera_type
         self.classes = CLASS_LABEL_2_ID_MAPPING
-        self._s3_config = S3Config(endpoint="minio.minio.svc:9000")
+        self._s3_config = S3Config(endpoint="s3.office.optocycle.net")
         self.bucket = bucket
         self._s3_inst = None
         self._s3_inst_lock = multiprocessing.Lock()
