@@ -49,7 +49,7 @@ def get_data(dataset_config, data_set_root, augmentations: List = []):
     return _get_data(dataset_config, without_test_labels=False, augmentations=augmentations, data_set_root=data_set_root)
 
 
-def _get_data(dataset_config, data_set_root, without_test_labels=True, augmentations: List = []):
+def _get_data(dataset_config, data_set_root, without_test_labels=False, augmentations: List = []):
     DATASET_2_DIRECTORY_MAPPING = {
         'debris': os.path.join(data_set_root, 'Debris/'),  # TODO: set paths?!
      #   'fruit': os.path.join(data_set_root, 'Fruits/'),

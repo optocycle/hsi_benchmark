@@ -58,7 +58,7 @@ def reset_model_hparams(hparams):
 
     return hparams
 
-
+# why ignore test labels? 
 def _default_collate_fn(batch, labels=True):
     xs = torch.stack([b[0] for b in batch])
     ys = torch.stack([b[1] if torch.is_tensor(b[1]) else torch.tensor(b[1]) for b in batch]) if labels \
@@ -73,7 +73,7 @@ def get_data_loaders(data: DataObject, hparams, collate_fn=_default_collate_fn):
                               num_workers=hparams['num_workers'], shuffle=True, drop_last=True)
     val_loader = DataLoader(data.datasets.val, collate_fn=collate_fn, batch_size=1,
                             num_workers=hparams['num_workers'], shuffle=False, drop_last=True)
-    test_loader = DataLoader(data.datasets.test, collate_fn=lambda batch: collate_fn(batch, labels=False),
+    test_loader = DataLoader(data.datasets.test, collate_fn=lambda batch: collate_fn(batch, labels=True),
                              batch_size=hparams['batch_size'], num_workers=hparams['num_workers'], drop_last=False)
 
     return train_loader, val_loader, test_loader
