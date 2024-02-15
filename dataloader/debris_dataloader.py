@@ -183,8 +183,7 @@ class DebrisDataset(HSDataset):
 
             s3_np = s3.get_object(bucket_name=self.bucket, object_name=self._objects[sample['filename'] + '.npy'])
             image = np.load(BytesIO(s3_np.read()))
-            _data = cv2.resize(image, dsize=self.spatial_size, interpolation=cv2.INTER_CUBIC)
-            _data = np.array(_data)
+            _data = cv2.resize(image, dsize=self.target_size, interpolation=cv2.INTER_CUBIC)
             item = torch.tensor(bands_as_first_dimension(_data))
 
         if self.transform is not None:

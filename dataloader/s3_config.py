@@ -5,7 +5,7 @@ import json
 @dataclass
 class S3Config:
     endpoint: str
-    credentials_file: str = "/home/jovan/.minio/credentials.json"
+    credentials_file: str = "/home/dev/.minio/credentials.json"
 
     @property
     def access_key(self) -> str:
